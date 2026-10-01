@@ -231,29 +231,37 @@
             const now = new Date();
             const timeStr = now.toLocaleTimeString();
 
-            // อัปเดตตัวเลขการ์ด
-            document.getElementById('val-temp').innerText = (data.temperature || 0).toFixed(1);
-            document.getElementById('val-humid').innerText = (data.humidity || 0).toFixed(1);
-            document.getElementById('val-soil').innerText = (data.soil_moisture || 0).toFixed(1);
-            document.getElementById('val-light').innerText = Math.round(data.light_lux || 0).toLocaleString();
-            document.getElementById('val-co2').innerText = Math.round(data.co2_ppm || 0).toLocaleString();
-            document.getElementById('val-volt').innerText = (data.voltage || 0).toFixed(1);
+            // แปลงข้อมูลจาก Firebase ให้เป็นตัวเลข (Float) เสมอ
+            const tempVal = parseFloat(data.temperature) || 0;
+            const humidVal = parseFloat(data.humidity) || 0;
+            const soilVal = parseFloat(data.soil_moisture) || 0;
+            const lightVal = parseFloat(data.light_lux) || 0;
+            const co2Val = parseFloat(data.co2_ppm) || 0;
+            const voltVal = parseFloat(data.voltage) || 0;
+
+            // อัปเดตตัวเลขบนการ์ด
+            document.getElementById('val-temp').innerText = tempVal.toFixed(1);
+            document.getElementById('val-humid').innerText = humidVal.toFixed(1);
+            document.getElementById('val-soil').innerText = soilVal.toFixed(1);
+            document.getElementById('val-light').innerText = Math.round(lightVal).toLocaleString();
+            document.getElementById('val-co2').innerText = Math.round(co2Val).toLocaleString();
+            document.getElementById('val-volt').innerText = voltVal.toFixed(1);
 
             // อัปเดตความยาว Progress Bar
-            document.getElementById('bar-temp').style.width = Math.min((data.temperature / 50) * 100, 100) + '%';
-            document.getElementById('bar-humid').style.width = Math.min(data.humidity, 100) + '%';
-            document.getElementById('bar-soil').style.width = Math.min(data.soil_moisture, 100) + '%';
-            document.getElementById('bar-light').style.width = Math.min((data.light_lux / 50000) * 100, 100) + '%';
-            document.getElementById('bar-co2').style.width = Math.min((data.co2_ppm / 2000) * 100, 100) + '%';
-            document.getElementById('bar-volt').style.width = Math.min((data.voltage / 5) * 100, 100) + '%';
+            document.getElementById('bar-temp').style.width = Math.min((tempVal / 50) * 100, 100) + '%';
+            document.getElementById('bar-humid').style.width = Math.min(humidVal, 100) + '%';
+            document.getElementById('bar-soil').style.width = Math.min(soilVal, 100) + '%';
+            document.getElementById('bar-light').style.width = Math.min((lightVal / 50000) * 100, 100) + '%';
+            document.getElementById('bar-co2').style.width = Math.min((co2Val / 2000) * 100, 100) + '%';
+            document.getElementById('bar-volt').style.width = Math.min((voltVal / 5) * 100, 100) + '%';
 
             // อัปเดตเวลาล่าสุด
             document.getElementById('last-update').innerText = `อัปเดตล่าสุด: ${timeStr}`;
 
             // เพิ่มข้อมูลลงในกราฟ
-            chartData.temp.push((data.temperature || 0).toFixed(1));
-            chartData.humid.push((data.humidity || 0).toFixed(1));
-            chartData.soil.push((data.soil_moisture || 0).toFixed(1));
+            chartData.temp.push(tempVal.toFixed(1));
+            chartData.humid.push(humidVal.toFixed(1));
+            chartData.soil.push(soilVal.toFixed(1));
             chartData.times.push(timeStr);
 
             if (chartData.temp.length > maxPoints) {
