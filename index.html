@@ -1,2 +1,301 @@
-'Smart Environmental IoT Dashboard
-<canvas id="historyChart"></canvas>'
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart EcoFarm - Realtime IoT Dashboard (iot-114)</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap');
+        * { font-family: 'Prompt', sans-serif; }
+        .glass-card {
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+    </style>
+</head>
+<body class="bg-slate-900 text-slate-100 min-h-screen pb-12">
+
+    <!-- Header / Navbar -->
+    <header class="bg-slate-800/80 backdrop-blur border-b border-slate-700 sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 py-4 flex flex-col md:flex-row justify-between items-center gap-4">
+            <div class="flex items-center gap-3">
+                <div class="p-3 bg-emerald-500/20 text-emerald-400 rounded-xl border border-emerald-500/30">
+                    <i class="fa-solid fa-leaf text-2xl"></i>
+                </div>
+                <div>
+                    <h1 class="text-xl font-bold bg-gradient-to-r from-emerald-400 to-teal-200 bg-clip-text text-transparent">
+                        Smart EcoFarm IoT Dashboard (iot-114)
+                    </h1>
+                    <p class="text-xs text-slate-400">ระบบเฝ้าระวังและตรวจวัดค่าสภาพแวดล้อมฟาร์มอัจฉริยะแบบ Realtime</p>
+                </div>
+            </div>
+            
+            <div class="flex items-center gap-3">
+                <span id="connection-status" class="flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
+                    <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span> Live Sync Active
+                </span>
+                <span id="last-update" class="text-xs text-slate-400 bg-slate-800 px-3 py-1.5 rounded-lg border border-slate-700">
+                    อัปเดตล่าสุด: --:--:--
+                </span>
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-7xl mx-auto px-4 mt-8 space-y-8">
+
+        <!-- Grid Cards แสดงค่าเซ็นเซอร์ 6 คอลัมน์ -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            
+            <!-- 1. Temperature -->
+            <div class="bg-slate-800/60 rounded-2xl p-5 border border-slate-700/60 hover:border-amber-500/50 transition-all duration-300 shadow-lg">
+                <div class="flex justify-between items-start mb-4">
+                    <div>
+                        <p class="text-slate-400 text-sm font-medium">อุณหภูมิ (Temperature)</p>
+                        <h3 id="val-temp" class="text-3xl font-bold text-amber-400 mt-1">-- °C</h3>
+                    </div>
+                    <div class="p-3 bg-amber-500/10 text-amber-400 rounded-xl border border-amber-500/20">
+                        <i class="fa-solid fa-temperature-half text-2xl"></i>
+                    </div>
+                </div>
+                <div class="w-full bg-slate-700 rounded-full h-1.5 overflow-hidden">
+                    <div id="bar-temp" class="bg-amber-400 h-full transition-all duration-500" style="width: 0%"></div>
+                </div>
+            </div>
+
+            <!-- 2. Air Humidity -->
+            <div class="bg-slate-800/60 rounded-2xl p-5 border border-slate-700/60 hover:border-cyan-500/50 transition-all duration-300 shadow-lg">
+                <div class="flex justify-between items-start mb-4">
+                    <div>
+                        <p class="text-slate-400 text-sm font-medium">ความชื้นอากาศ (Air Humidity)</p>
+                        <h3 id="val-humid" class="text-3xl font-bold text-cyan-400 mt-1">-- %</h3>
+                    </div>
+                    <div class="p-3 bg-cyan-500/10 text-cyan-400 rounded-xl border border-cyan-500/20">
+                        <i class="fa-solid fa-droplet text-2xl"></i>
+                    </div>
+                </div>
+                <div class="w-full bg-slate-700 rounded-full h-1.5 overflow-hidden">
+                    <div id="bar-humid" class="bg-cyan-400 h-full transition-all duration-500" style="width: 0%"></div>
+                </div>
+            </div>
+
+            <!-- 3. Soil Moisture -->
+            <div class="bg-slate-800/60 rounded-2xl p-5 border border-slate-700/60 hover:border-emerald-500/50 transition-all duration-300 shadow-lg">
+                <div class="flex justify-between items-start mb-4">
+                    <div>
+                        <p class="text-slate-400 text-sm font-medium">ความชื้นในดิน (Soil Moisture)</p>
+                        <h3 id="val-soil" class="text-3xl font-bold text-emerald-400 mt-1">-- %</h3>
+                    </div>
+                    <div class="p-3 bg-emerald-500/10 text-emerald-400 rounded-xl border border-emerald-500/20">
+                        <i class="fa-solid fa-plant-wilt text-2xl"></i>
+                    </div>
+                </div>
+                <div class="w-full bg-slate-700 rounded-full h-1.5 overflow-hidden">
+                    <div id="bar-soil" class="bg-emerald-400 h-full transition-all duration-500" style="width: 0%"></div>
+                </div>
+            </div>
+
+            <!-- 4. Light Intensity -->
+            <div class="bg-slate-800/60 rounded-2xl p-5 border border-slate-700/60 hover:border-yellow-500/50 transition-all duration-300 shadow-lg">
+                <div class="flex justify-between items-start mb-4">
+                    <div>
+                        <p class="text-slate-400 text-sm font-medium">ความเข้มแสง (Light Intensity)</p>
+                        <h3 id="val-light" class="text-3xl font-bold text-yellow-400 mt-1">-- Lux</h3>
+                    </div>
+                    <div class="p-3 bg-yellow-500/10 text-yellow-400 rounded-xl border border-yellow-500/20">
+                        <i class="fa-solid fa-sun text-2xl"></i>
+                    </div>
+                </div>
+                <div class="w-full bg-slate-700 rounded-full h-1.5 overflow-hidden">
+                    <div id="bar-light" class="bg-yellow-400 h-full transition-all duration-500" style="width: 0%"></div>
+                </div>
+            </div>
+
+            <!-- 5. CO2 / Air Quality -->
+            <div class="bg-slate-800/60 rounded-2xl p-5 border border-slate-700/60 hover:border-purple-500/50 transition-all duration-300 shadow-lg">
+                <div class="flex justify-between items-start mb-4">
+                    <div>
+                        <p class="text-slate-400 text-sm font-medium">ระดับ CO2 (Air Quality)</p>
+                        <h3 id="val-co2" class="text-3xl font-bold text-purple-400 mt-1">-- PPM</h3>
+                    </div>
+                    <div class="p-3 bg-purple-500/10 text-purple-400 rounded-xl border border-purple-500/20">
+                        <i class="fa-solid fa-wind text-2xl"></i>
+                    </div>
+                </div>
+                <div class="w-full bg-slate-700 rounded-full h-1.5 overflow-hidden">
+                    <div id="bar-co2" class="bg-purple-400 h-full transition-all duration-500" style="width: 0%"></div>
+                </div>
+            </div>
+
+            <!-- 6. System Voltage -->
+            <div class="bg-slate-800/60 rounded-2xl p-5 border border-slate-700/60 hover:border-blue-500/50 transition-all duration-300 shadow-lg">
+                <div class="flex justify-between items-start mb-4">
+                    <div>
+                        <p class="text-slate-400 text-sm font-medium">แรงดันไฟระบบ (Voltage)</p>
+                        <h3 id="val-volt" class="text-3xl font-bold text-blue-400 mt-1">-- V</h3>
+                    </div>
+                    <div class="p-3 bg-blue-500/10 text-blue-400 rounded-xl border border-blue-500/20">
+                        <i class="fa-solid fa-bolt text-2xl"></i>
+                    </div>
+                </div>
+                <div class="w-full bg-slate-700 rounded-full h-1.5 overflow-hidden">
+                    <div id="bar-volt" class="bg-blue-400 h-full transition-all duration-500" style="width: 0%"></div>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Section: Historical Graph & Table -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            
+            <!-- Realtime Chart -->
+            <div class="lg:col-span-2 bg-slate-800/60 rounded-2xl p-6 border border-slate-700/60 shadow-lg">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-lg font-semibold text-slate-200 flex items-center gap-2">
+                        <i class="fa-solid fa-chart-line text-emerald-400"></i> กราฟแนวโน้มข้อมูเลย้อนหลัง (History)
+                    </h2>
+                </div>
+                <div class="h-72">
+                    <canvas id="sensorChart"></canvas>
+                </div>
+            </div>
+
+            <!-- History Data Table -->
+            <div class="bg-slate-800/60 rounded-2xl p-6 border border-slate-700/60 shadow-lg flex flex-col">
+                <h2 class="text-lg font-semibold text-slate-200 mb-4 flex items-center gap-2">
+                    <i class="fa-solid fa-clock-rotate-left text-teal-400"></i> ประวัติข้อมูลล่าสุด
+                </h2>
+                <div class="overflow-y-auto flex-1 max-h-72 pr-1">
+                    <table class="w-full text-xs text-left text-slate-300">
+                        <thead class="text-slate-400 bg-slate-700/50 uppercase sticky top-0">
+                            <tr>
+                                <th class="py-2 px-2">เวลา</th>
+                                <th class="py-2 px-2">Temp</th>
+                                <th class="py-2 px-2">Humid</th>
+                                <th class="py-2 px-2">Soil</th>
+                            </tr>
+                        </thead>
+                        <tbody id="table-body">
+                            <tr><td colspan="4" class="text-center py-4 text-slate-500">กำลังรอข้อมูล...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+        </div>
+
+    </main>
+
+    <!-- Firebase SDK v10 Modular -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+
+        // Firebase Configuration
+        const firebaseConfig = {
+            databaseURL: "https://project-f296c-default-rtdb.asia-southeast1.firebasedatabase.app"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
+
+        // Chart Initialization
+        const ctx = document.getElementById('sensorChart').getContext('2d');
+        const sensorChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: [],
+                datasets: [
+                    { label: 'อุณหภูมิ (°C)', borderColor: '#f59e0b', backgroundColor: 'rgba(245, 158, 11, 0.1)', data: [], fill: true, tension: 0.3 },
+                    { label: 'ความชื้นอากาศ (%)', borderColor: '#06b6d4', backgroundColor: 'rgba(6, 182, 212, 0.1)', data: [], fill: true, tension: 0.3 },
+                    { label: 'ความชื้นในดิน (%)', borderColor: '#10b981', backgroundColor: 'rgba(16, 185, 129, 0.1)', data: [], fill: true, tension: 0.3 }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { labels: { color: '#94a3b8' } } },
+                scales: {
+                    x: { ticks: { color: '#64748b' }, grid: { color: '#334155' } },
+                    y: { ticks: { color: '#64748b' }, grid: { color: '#334155' } }
+                }
+            }
+        });
+
+        // Listen to 'latest' node
+        const latestRef = ref(db, 'latest');
+        onValue(latestRef, (snapshot) => {
+            const data = snapshot.val();
+            if (data) {
+                document.getElementById('val-temp').innerText = (data.temperature ?? '--') + ' °C';
+                document.getElementById('val-humid').innerText = (data.humidity ?? '--') + ' %';
+                document.getElementById('val-soil').innerText = (data.soil_moisture ?? '--') + ' %';
+                document.getElementById('val-light').innerText = (data.light_lux ?? '--') + ' Lux';
+                document.getElementById('val-co2').innerText = (data.co2_ppm ?? '--') + ' PPM';
+                document.getElementById('val-volt').innerText = (data.voltage ?? '--') + ' V';
+
+                // Progress bars
+                document.getElementById('bar-temp').style.width = Math.min((data.temperature / 50) * 100, 100) + '%';
+                document.getElementById('bar-humid').style.width = Math.min(data.humidity, 100) + '%';
+                document.getElementById('bar-soil').style.width = Math.min(data.soil_moisture, 100) + '%';
+                document.getElementById('bar-light').style.width = Math.min((data.light_lux / 50000) * 100, 100) + '%';
+                document.getElementById('bar-co2').style.width = Math.min((data.co2_ppm / 2000) * 100, 100) + '%';
+                document.getElementById('bar-volt').style.width = Math.min((data.voltage / 5) * 100, 100) + '%';
+
+                document.getElementById('last-update').innerText = 'อัปเดตล่าสุด: ' + new Date().toLocaleTimeString('th-TH');
+            }
+        });
+
+        // Listen to 'history' node
+        const historyRef = ref(db, 'history');
+        onValue(historyRef, (snapshot) => {
+            const data = snapshot.val();
+            if (data) {
+                const keys = Object.keys(data);
+                const recentKeys = keys.slice(-10); // เอา 10 ค่าล่าสุด
+
+                const timeLabels = [];
+                const tempArray = [];
+                const humidArray = [];
+                const soilArray = [];
+
+                let tableHTML = '';
+
+                recentKeys.forEach((key, index) => {
+                    const item = data[key];
+                    const timeStr = item.time || new Date().toLocaleTimeString('th-TH');
+                    
+                    timeLabels.push(timeStr);
+                    tempArray.push(item.temperature);
+                    humidArray.push(item.humidity);
+                    soilArray.push(item.soil_moisture);
+
+                    tableHTML = `
+                        <tr class="border-b border-slate-700/50 hover:bg-slate-700/30">
+                            <td class="py-2 px-2">${timeStr}</td>
+                            <td class="py-2 px-2 text-amber-400">${item.temperature}°C</td>
+                            <td class="py-2 px-2 text-cyan-400">${item.humidity}%</td>
+                            <td class="py-2 px-2 text-emerald-400">${item.soil_moisture}%</td>
+                        </tr>
+                    ` + tableHTML;
+                });
+
+                document.getElementById('table-body').innerHTML = tableHTML;
+
+                // Update Chart
+                sensorChart.data.labels = timeLabels;
+                sensorChart.data.datasets[0].data = tempArray;
+                sensorChart.data.datasets[1].data = humidArray;
+                sensorChart.data.datasets[2].data = soilArray;
+                sensorChart.update();
+            }
+        });
+    </script>
+</body>
+</html>
